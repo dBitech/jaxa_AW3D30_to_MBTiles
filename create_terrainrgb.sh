@@ -24,6 +24,8 @@ HIGHRES_VRT=""
 RIOWORKERS=`sysctl -n kern.smp.cpus`
 RGBIFY_OPTIONS=""
 GDALOPTIONS=""
+RESAMPLE_ALGO="cubicspline"
+
 
 # print a help message
 function print_usage() {
@@ -35,9 +37,11 @@ function print_usage() {
   echo "                   last in the file, defaults to ${HIGHRES_VRT:-none}"
   echo "  --output-dir:  the directory to put the resulting whole combined "
   echo "                   raster tile defaults to ${OUTPUT_DIR}."
-  echo "  --workers:     the number of rgbify workers to run, defaults to the number of"
+  echo "  --workers:     the number of rgbify workers to run, defaults to the number of "
   echo "                   CPU thread's detected (${RIOWORKERS})"
   echo "  --verbose:     Turn on chattier output"
+  echo "  --resample:	 Chose what resampeling method is used when combining multiple "
+  echo "                   datasets defaults to ${RESAMPLE_ALGO}"
   echo "  --overwrite:   Force the creation of all files, not just the missing/new ones"
   exit
 }
@@ -78,6 +82,14 @@ while true; do
     --highres-vrt)
       if [ ! -n "${2-}" ]; then
         HIGHRES_VRT="{$2}"
+        shift 2
+      else
+        shift 1
+      fi
+    ;;
+    --resample)
+      if [ ! -n "${2-}" ]; then
+        RESAMPLE_ALGO="${2}"
         shift 2
       else
         shift 1
@@ -135,7 +147,7 @@ echo ${HIGHRES_VRT} >> ${OUTPUT_DIR}/JAXA_DSM.list
 gdalbuildvrt ${GDALOPTIONS} -resolution highest -srcnodata -9999 -vrtnodata -9999 -input_file_list ${OUTPUT_DIR}/JAXA_DSM.list ${vrtfile}
 
 if [ ${OVERWRITE} -eq "true" ] || [ ${vrtfile} -nt ${vrtfile2} ]; then
-  gdalwarp ${GDALOPTIONS} -r cubicspline -t_srs EPSG:3857 -dstnodata 0 -multi -co NUM_THREADS=ALL_CPUS -wo NUM_THREADS=ALL_CPUS --config GDAL_CACHEMAX 50% -co COMPRESS=DEFLATE -co BIGTIFF=YES ${vrtfile} ${vrtfile2}
+  gdalwarp ${GDALOPTIONS} -r ${RESAMPLE_ALGO} -t_srs EPSG:3857 -dstnodata 0 -multi -co NUM_THREADS=ALL_CPUS -wo NUM_THREADS=ALL_CPUS --config GDAL_CACHEMAX 50% -co COMPRESS=DEFLATE -co BIGTIFF=YES ${vrtfile} ${vrtfile2}
 fi
 
 #make use of rounding see details in https://github.com/mapbox/rio-rgbify/pull/34
