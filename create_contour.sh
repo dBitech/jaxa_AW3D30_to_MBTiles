@@ -19,12 +19,29 @@ Cyan='\033[0;36m'         # Cyan
 DEBUG="false"
 INPUT_DIR=/data/mapping/AW3D30
 OUTPUT_DIR=/data/mapping
-WORKERS=`sysctl -n kern.smp.cpus`
 INTERVAL=100
 IMPERIAL="false"
 VERBOSE="false"
 OVERWRITE="false"
 CLEAN="true"
+
+PLATFORM='unknown'
+unamestr=$(uname)
+if [[ "$unamestr" == 'Linux' ]]; then
+   PLATFORM='linux'
+elif [[ "$unamestr" == 'FreeBSD' ]]; then
+   PLATFORM='freebsd'
+fi
+
+if [[ $PLATFORM == 'linux' ]]; then
+   WORKERS=`nproc`
+elif [[ $PLATFORM == 'freebsd' ]]; then
+   WORKERS=`sysctl -n kern.smp.cpus`
+else
+  WORKERS=1
+fi
+
+
 # print a help message
 function print_usage()
 {

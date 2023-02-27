@@ -21,11 +21,28 @@ Cyan='\033[0;36m'         # Cyan
 JAXA_DIR=/data/mapping/AW3D30
 OUTPUT_DIR=/data/mapping
 HIGHRES_VRT=""
-RIOWORKERS=`sysctl -n kern.smp.cpus`
 RGBIFY_OPTIONS=""
 GDALOPTIONS=""
 RESAMPLE_ALGO="cubicspline"
 OVERWRITE=""
+
+PLATFORM='unknown'
+unamestr=$(uname)
+if [[ "$unamestr" == 'Linux' ]]; then
+   PLATFORM='linux'
+elif [[ "$unamestr" == 'FreeBSD' ]]; then
+   PLATFORM='freebsd'
+fi
+
+if [[ $PLATFORM == 'linux' ]]; then
+   WORKERS=`nproc`
+elif [[ $PLATFORM == 'freebsd' ]]; then
+   WORKERS=`sysctl -n kern.smp.cpus`
+else
+  WORKERS=1
+fi
+
+
 
 # print a help message
 function print_usage() {
@@ -38,7 +55,7 @@ function print_usage() {
   echo "  --output-dir:  the directory to put the resulting whole combined "
   echo "                   raster tile defaults to ${OUTPUT_DIR}."
   echo "  --workers:     the number of rgbify workers to run, defaults to the number of "
-  echo "                   CPU thread's detected (${RIOWORKERS})"
+  echo "                   CPU thread's detected (${WORKERS})"
   echo "  --verbose:     Turn on chattier output"
   echo "  --resample:	 Chose what resampeling method is used when combining multiple "
   echo "                   datasets defaults to ${RESAMPLE_ALGO}"
@@ -116,7 +133,7 @@ while true; do
     ;;
     -j | -w | --workers)
       if [ ! -n "${2-}" ]; then
-        RIOWORKERS=${2}
+        WORKERS=${2}
         shift 2
       else
         shift 1
@@ -158,13 +175,13 @@ vrtfile2=${OUTPUT_DIR}/jaxa_tilergb0-12-warp.tif
 #  zoom=$((12-$n+4))
 #  if [[ ${vrtfile2} -nt ${zoom}-tmp.mbtiles ]]; then
 #    echo  ${vrtfile2} is newer than ${zoom}-tmp.mbtiles Generating
-#    rio rgbify ${RGBIFY_OPTIONS} --base-val -10000 --interval 0.1 --min-z ${zoom} --max-z ${zoom} --workers ${RIOWORKERS} --round-digits ${n} --format png ${vrtfile2} ${zoom}-tmp.mbtiles
+#    rio rgbify ${RGBIFY_OPTIONS} --base-val -10000 --interval 0.1 --min-z ${zoom} --max-z ${zoom} --workers ${WORKERS} --round-digits ${n} --format png ${vrtfile2} ${zoom}-tmp.mbtiles
 #  fi
 #done
 
 if [[ ${vrtfile2} -nt $0-tmp.mbtiles ]]; then
   echo  ${vrtfile2} is newer than 0-tmp.mbtiles Generating
-  rio rgbify ${RGBIFY_OPTIONS} --base-val -10000 --interval 0.1 --min-z 0 --max-z 3 --workers ${RIOWORKERS} --format png ${vrtfile2} 0-tmp.mbtiles
+  rio rgbify ${RGBIFY_OPTIONS} --base-val -10000 --interval 0.1 --min-z 0 --max-z 3 --workers ${WORKERS} --format png ${vrtfile2} 0-tmp.mbtiles
 fi
 #
 #
