@@ -124,13 +124,8 @@ main ()
   rm ${OUTPUT_DIR}/mbtiles.files
   find ${OUTPUT_DIR}  -name \*.tif.json > ${OUTPUT_DIR}/json.files
   find ${OUTPUT_DIR}  -name \*.tif.mbtiles > ${OUTPUT_DIR}/mbtiles.files
-  for i in `cat ${OUTPUT_DIR}/mbtiles.files`; do
-    echo $i
-    /home/darcy/src/github.com/dBiTech/tippecanoe/tile-join --no-tile-size-limit -o ${OUTPUT_DIR}/contours-${INTERVAL}.mbtiles -r ${OUTPUT_DIR}/mbtiles.files 2>&1 | sort -n
-    if [[ ${CLEAN} = "true" ]]; then
-      rm ${i}
-    fi
-  done;
+  rm ${OUTPUT_DIR}/contours-${INTERVAL}.mbtiles
+  /home/darcy/src/github.com/dBiTech/tippecanoe/tile-join --no-tile-size-limit -o ${OUTPUT_DIR}/contours-${INTERVAL}.mbtiles -r ${OUTPUT_DIR}/mbtiles.files
 }
 
 export -f contour
