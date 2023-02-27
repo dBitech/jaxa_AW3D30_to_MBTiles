@@ -25,7 +25,7 @@ RIOWORKERS=`sysctl -n kern.smp.cpus`
 RGBIFY_OPTIONS=""
 GDALOPTIONS=""
 RESAMPLE_ALGO="cubicspline"
-
+OVERWRITE=""
 
 # print a help message
 function print_usage() {
@@ -138,27 +138,34 @@ vrtfile2=${OUTPUT_DIR}/jaxa_tilergb0-12-warp.tif
 [ -d "$OUTPUT_DIR" ] || mkdir -p $OUTPUT_DIR || { echo "error: $OUTPUT_DIR " 1>&2; exit 1; }
 
 
-find ${JAXA_DIR} -name \*_DSM.tif > ${OUTPUT_DIR}/JAXA_DSM.list
-echo ${HIGHRES_VRT} >> ${OUTPUT_DIR}/JAXA_DSM.list
+#find ${JAXA_DIR} -name \*_DSM.tif > ${OUTPUT_DIR}/JAXA_DSM.list
+#echo ${HIGHRES_VRT} >> ${OUTPUT_DIR}/JAXA_DSM.list
 
 # need to add detection to determine if ANY of the files contained in 
 # JAXA_DSM.list are newer than the vrtfile but in the interm observe the overwrite flag
 
-gdalbuildvrt ${GDALOPTIONS} -resolution highest -srcnodata -9999 -vrtnodata -9999 -input_file_list ${OUTPUT_DIR}/JAXA_DSM.list ${vrtfile}
+#gdalbuildvrt ${GDALOPTIONS} -resolution highest -srcnodata -9999 -vrtnodata -9999 -input_file_list ${OUTPUT_DIR}/JAXA_DSM.list ${vrtfile}
 
-if [ ${OVERWRITE} -eq "true" ] || [ ${vrtfile} -nt ${vrtfile2} ]; then
-  gdalwarp ${GDALOPTIONS} -r ${RESAMPLE_ALGO} -t_srs EPSG:3857 -dstnodata 0 -multi -co NUM_THREADS=ALL_CPUS -wo NUM_THREADS=ALL_CPUS --config GDAL_CACHEMAX 50% -co COMPRESS=DEFLATE -co BIGTIFF=YES ${vrtfile} ${vrtfile2}
-fi
+#if [ -z ${OVERWRITE+x} ]; then 
+#  if [[ ${OVERWRITE} = "true" ]] || [[ ${vrtfile} -nt ${vrtfile2} ]]; then
+#    gdalwarp ${GDALOPTIONS} -r ${RESAMPLE_ALGO} -t_srs EPSG:3857 -dstnodata 0 -multi -co NUM_THREADS=ALL_CPUS -wo NUM_THREADS=ALL_CPUS --config GDAL_CACHEMAX 50% -co COMPRESS=DEFLATE -co BIGTIFF=YES ${vrtfile} ${vrtfile2}
+#  fi
+#fi
 
 #make use of rounding see details in https://github.com/mapbox/rio-rgbify/pull/34
-for n in 12 11 10 9 8 7 6 5 4; do
-  zoom=$((12-$n+4))
-  if [[ ${vrtfile2} -nt ${zoom}-tmp.mbtiles ]]; then
-    echo  ${vrtfile2} is newer than ${zoom}-tmp.mbtiles Generating
-    rio rgbify ${RGBIFY_OPTIONS} --base-val -10000 --interval 0.1 --min-z ${zoom} --max-z ${zoom} --workers ${RIOWORKERS} --round-digits ${n} --format png ${vrtfile2} ${zoom}-tmp.mbtiles
-  fi
-done
 
+#for n in 12 11 10 9 8 7 6 5 4; do
+#  zoom=$((12-$n+4))
+#  if [[ ${vrtfile2} -nt ${zoom}-tmp.mbtiles ]]; then
+#    echo  ${vrtfile2} is newer than ${zoom}-tmp.mbtiles Generating
+#    rio rgbify ${RGBIFY_OPTIONS} --base-val -10000 --interval 0.1 --min-z ${zoom} --max-z ${zoom} --workers ${RIOWORKERS} --round-digits ${n} --format png ${vrtfile2} ${zoom}-tmp.mbtiles
+#  fi
+#done
+
+if [[ ${vrtfile2} -nt $0-tmp.mbtiles ]]; then
+  echo  ${vrtfile2} is newer than 0-tmp.mbtiles Generating
+  rio rgbify ${RGBIFY_OPTIONS} --base-val -10000 --interval 0.1 --min-z 0 --max-z 3 --workers ${RIOWORKERS} --format png ${vrtfile2} 0-tmp.mbtiles
+fi
 #
 #
 #cp ${zoom}-tmp.mbtile ${mbtiles}
